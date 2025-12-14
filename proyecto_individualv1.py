@@ -17,251 +17,253 @@ import pygame
 from typing import List, Tuple, Optional
 
 # --- CONFIGURACIÓN ---
-class Config:
-    WIDTH = 900
-    HEIGHT = 600
-    FPS = 60
-    GRAVITY = 9.81 * 100
-    TITLE = "Cañón Pro"
+class configuracion:
+    ancho = 900
+    alto = 600
+    fps = 60
+    gravedad = 9.81 * 100
+    titulo = "Tiro parabólico"
 
-class Colors:
-    SKY_TOP = (100, 149, 237)
-    SKY_BOTTOM = (224, 255, 255)
-    GROUND = (34, 139, 34)
-    TEXT = (255, 255, 255)
-    CANNON = (60, 60, 60)
-    PROJECTILE = (220, 20, 60)
-    PROJECTILE_TRAIL = (200, 200, 200)
-    TARGET = (255, 69, 0)
-    BUTTON = (70, 130, 180)
-    BUTTON_HOVER = (100, 160, 210)
+class colores:
+    cielo_superior = (100, 149, 237)
+    cielo_inferior = (224, 255, 255)
+    suelo = (34, 139, 34)
+    texto = (255, 255, 255)
+    canon = (60, 60, 60)
+    proyectil = (220, 20, 60)
+    estela_proyectil = (200, 200, 200)
+    diana = (255, 69, 0)
+    boton = (70, 130, 180)
+    boton_hover = (100, 160, 210)
 
-class PhysicsParams:
-    PROJECTILE_RADIUS = 6
-    TARGET_RADIUS = 20
-    CANNON_LENGTH = 50
-    CANNON_POS = (60, Config.HEIGHT - 70)
+class fisica:
+    radio_proyectil = 6
+    radio_diana = 20
+    longitud_canon = 50
+    posicion_canon = (60, configuracion.alto - 70)
 
 # --- UTILIDADES ---
-def clamp(v, a, b):
-    return max(a, min(b, v))
+def limitar(valor, minimo, maximo):
+    return max(minimo, min(maximo, valor))
 
-def draw_gradient(surface, top, bottom):
-    for y in range(surface.get_height()):
-        r = top[0] + (bottom[0]-top[0]) * y / surface.get_height()
-        g = top[1] + (bottom[1]-top[1]) * y / surface.get_height()
-        b = top[2] + (bottom[2]-top[2]) * y / surface.get_height()
-        pygame.draw.line(surface, (int(r),int(g),int(b)), (0,y), (Config.WIDTH,y))
+def dibujar_degradado(superficie, superior, inferior):
+    for y in range(superficie.get_height()):
+        r = superior[0] + (inferior[0] - superior[0]) * y / superficie.get_height()
+        g = superior[1] + (inferior[1] - superior[1]) * y / superficie.get_height()
+        b = superior[2] + (inferior[2] - superior[2]) * y / superficie.get_height()
+        pygame.draw.line(superficie, (int(r), int(g), int(b)), (0, y), (configuracion.ancho, y))
 
 # --- PROYECTIL ---
-class Projectile:
-    def __init__(self, x, y, vx, vy):
-        self.x, self.y = x, y
-        self.vx, self.vy = vx, vy
-        self.alive = True
-        self.trail: List[Tuple[int,int]] = []
+class proyectil:
+    def __init__(self, x, y, velocidad_x, velocidad_y):
+        self.x = x
+        self.y = y
+        self.velocidad_x = velocidad_x
+        self.velocidad_y = velocidad_y
+        self.activo = True
+        self.estela: List[Tuple[int, int]] = []
 
-    def update(self, dt):
-        self.vy += Config.GRAVITY * dt
-        self.x += self.vx * dt
-        self.y += self.vy * dt
-        self.trail.append((int(self.x), int(self.y)))
-        if len(self.trail) > 150:
-            self.trail.pop(0)
-        if self.y > Config.HEIGHT or self.x < 0 or self.x > Config.WIDTH:
-            self.alive = False
+    def actualizar(self, delta_tiempo):
+        self.velocidad_y += configuracion.gravedad * delta_tiempo
+        self.x += self.velocidad_x * delta_tiempo
+        self.y += self.velocidad_y * delta_tiempo
+        self.estela.append((int(self.x), int(self.y)))
+        if len(self.estela) > 150:
+            self.estela.pop(0)
+        if self.y > configuracion.alto or self.x < 0 or self.x > configuracion.ancho:
+            self.activo = False
 
-    def draw(self, screen):
-        if len(self.trail) > 1:
-            pygame.draw.lines(screen, Colors.PROJECTILE_TRAIL, False, self.trail, 2)
-        pygame.draw.circle(screen, Colors.PROJECTILE, (int(self.x), int(self.y)), PhysicsParams.PROJECTILE_RADIUS)
+    def dibujar(self, pantalla):
+        if len(self.estela) > 1:
+            pygame.draw.lines(pantalla, colores.estela_proyectil, False, self.estela, 2)
+        pygame.draw.circle(pantalla, colores.proyectil, (int(self.x), int(self.y)), fisica.radio_proyectil)
 
 # --- DIANA MÓVIL ---
-class Target:
+class diana:
     def __init__(self):
-        self.base_x = random.randint(400, Config.WIDTH - 80)
-        self.y = random.randint(200, Config.HEIGHT - 120)
-        self.radius = PhysicsParams.TARGET_RADIUS
-        self.time = 0
-        self.amplitude = random.randint(80, 200)
-        self.speed = random.uniform(1.0, 2.0)
+        self.base_x = random.randint(400, configuracion.ancho - 80)
+        self.y = random.randint(200, configuracion.alto - 120)
+        self.radio = fisica.radio_diana
+        self.tiempo = 0
+        self.amplitud = random.randint(80, 200)
+        self.velocidad = random.uniform(1.0, 2.0)
         self.x = self.base_x
 
-    def update(self, dt):
-        self.time += dt
-        self.x = self.base_x + math.sin(self.time * self.speed) * self.amplitude
+    def actualizar(self, delta_tiempo):
+        self.tiempo += delta_tiempo
+        self.x = self.base_x + math.sin(self.tiempo * self.velocidad) * self.amplitud
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, Colors.TARGET, (int(self.x), int(self.y)), self.radius)
-        pygame.draw.circle(screen, (255,255,255), (int(self.x), int(self.y)), int(self.radius*0.6))
+    def dibujar(self, pantalla):
+        pygame.draw.circle(pantalla, colores.diana, (int(self.x), int(self.y)), self.radio)
+        pygame.draw.circle(pantalla, (255, 255, 255), (int(self.x), int(self.y)), int(self.radio * 0.6))
 
-    def hit(self, p):
-        dx = self.x - p.x
-        dy = self.y - p.y
-        return dx*dx + dy*dy <= (self.radius + PhysicsParams.PROJECTILE_RADIUS)**2
+    def impacta(self, bala):
+        dx = self.x - bala.x
+        dy = self.y - bala.y
+        return dx * dx + dy * dy <= (self.radio + fisica.radio_proyectil) ** 2
 
-# --- GAME ---
-class GameManager:
+# --- JUEGO ---
+class gestor_juego:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
 
-        self.screen = pygame.display.set_mode((Config.WIDTH, Config.HEIGHT))
-        pygame.display.set_caption(Config.TITLE)
-        self.clock = pygame.time.Clock()
+        self.pantalla = pygame.display.set_mode((configuracion.ancho, configuracion.alto))
+        pygame.display.set_caption(configuracion.titulo)
+        self.reloj = pygame.time.Clock()
 
-        self.font_ui = pygame.font.SysFont("Verdana", 14)
-        self.font_big = pygame.font.SysFont("Verdana", 48, bold=True)
+        self.fuente_ui = pygame.font.SysFont("Verdana", 14)
+        self.fuente_grande = pygame.font.SysFont("Verdana", 48, bold=True)
 
-        self.sound_win = pygame.mixer.Sound("victory.wav")
-        self.sound_lose = pygame.mixer.Sound("defeat.wav")
+        self.sonido_ganar = pygame.mixer.Sound("victory.wav")
+        self.sonido_perder = pygame.mixer.Sound("defeat.wav")
 
-        self.round3_image = pygame.image.load("round3.png").convert_alpha()
-        self.show_round3 = False
-        self.round3_timer = 0
+        self.imagen_ronda3 = pygame.image.load("round3.png").convert_alpha()
+        self.mostrar_ronda3 = False
+        self.temporizador_ronda3 = 0
 
-        self.reset_game()
+        self.reiniciar_juego()
 
-    def reset_game(self):
-        self.angle = 45
-        self.power = 500
-        self.projectile: Optional[Projectile] = None
-        self.round = 1
-        self.max_rounds = 3
-        self.attempts = 5
-        self.target = Target()
-        self.game_over = False
-        self.win = False
-        self.show_round3 = False
+    def reiniciar_juego(self):
+        self.angulo = 45
+        self.potencia = 500
+        self.bala: Optional[proyectil] = None
+        self.ronda = 1
+        self.max_rondas = 3
+        self.intentos = 5
+        self.objetivo = diana()
+        self.fin_juego = False
+        self.gano = False
+        self.mostrar_ronda3 = False
         pygame.mixer.stop()
 
-    def fire(self):
-        rad = math.radians(self.angle)
-        cx, cy = PhysicsParams.CANNON_POS
-        x = cx + PhysicsParams.CANNON_LENGTH * math.cos(rad)
-        y = cy - PhysicsParams.CANNON_LENGTH * math.sin(rad)
-        vx = math.cos(rad) * self.power
-        vy = -math.sin(rad) * self.power
-        self.projectile = Projectile(x, y, vx, vy)
+    def disparar(self):
+        radianes = math.radians(self.angulo)
+        cx, cy = fisica.posicion_canon
+        x = cx + fisica.longitud_canon * math.cos(radianes)
+        y = cy - fisica.longitud_canon * math.sin(radianes)
+        velocidad_x = math.cos(radianes) * self.potencia
+        velocidad_y = -math.sin(radianes) * self.potencia
+        self.bala = proyectil(x, y, velocidad_x, velocidad_y)
 
-    def update(self, dt):
-        if self.game_over:
+    def actualizar(self, delta_tiempo):
+        if self.fin_juego:
             return
 
-        if self.show_round3:
-            self.round3_timer -= dt
-            if self.round3_timer <= 0:
-                self.show_round3 = False
+        if self.mostrar_ronda3:
+            self.temporizador_ronda3 -= delta_tiempo
+            if self.temporizador_ronda3 <= 0:
+                self.mostrar_ronda3 = False
             return
 
-        self.target.update(dt)
+        self.objetivo.actualizar(delta_tiempo)
 
-        if self.projectile:
-            self.projectile.update(dt)
-            if self.target.hit(self.projectile):
-                self.round += 1
-                self.projectile = None
-                if self.round == 3:
-                    self.show_round3 = True
-                    self.round3_timer = 3
-                if self.round > self.max_rounds:
-                    self.win = True
-                    self.game_over = True
-                    self.sound_win.play(-1)
+        if self.bala:
+            self.bala.actualizar(delta_tiempo)
+            if self.objetivo.impacta(self.bala):
+                self.ronda += 1
+                self.bala = None
+                if self.ronda == 3:
+                    self.mostrar_ronda3 = True
+                    self.temporizador_ronda3 = 3
+                if self.ronda > self.max_rondas:
+                    self.gano = True
+                    self.fin_juego = True
+                    self.sonido_ganar.play(-1)
                 else:
-                    self.attempts = 5
-                    self.target = Target()
-            elif not self.projectile.alive:
-                self.projectile = None
-                self.attempts -= 1
-                if self.attempts <= 0:
-                    self.game_over = True
-                    self.sound_lose.play(-1)
+                    self.intentos = 5
+                    self.objetivo = diana()
+            elif not self.bala.activo:
+                self.bala = None
+                self.intentos -= 1
+                if self.intentos <= 0:
+                    self.fin_juego = True
+                    self.sonido_perder.play(-1)
 
-    def draw_prediction(self):
-        rad = math.radians(self.angle)
-        cx, cy = PhysicsParams.CANNON_POS
-        sim_x = cx + PhysicsParams.CANNON_LENGTH * math.cos(rad)
-        sim_y = cy - PhysicsParams.CANNON_LENGTH * math.sin(rad)
-        sim_vx = math.cos(rad) * self.power
-        sim_vy = -math.sin(rad) * self.power
-        dt_sim = 1/Config.FPS
-        points = []
+    def dibujar_prediccion(self):
+        radianes = math.radians(self.angulo)
+        cx, cy = fisica.posicion_canon
+        x_sim = cx + fisica.longitud_canon * math.cos(radianes)
+        y_sim = cy - fisica.longitud_canon * math.sin(radianes)
+        vx_sim = math.cos(radianes) * self.potencia
+        vy_sim = -math.sin(radianes) * self.potencia
+        delta_sim = 1 / configuracion.fps
+        puntos = []
         for _ in range(300):
-            sim_vy += Config.GRAVITY * dt_sim
-            sim_x += sim_vx * dt_sim
-            sim_y += sim_vy * dt_sim
-            if sim_y > Config.HEIGHT or sim_x < 0 or sim_x > Config.WIDTH:
+            vy_sim += configuracion.gravedad * delta_sim
+            x_sim += vx_sim * delta_sim
+            y_sim += vy_sim * delta_sim
+            if y_sim > configuracion.alto or x_sim < 0 or x_sim > configuracion.ancho:
                 break
-            points.append((int(sim_x), int(sim_y)))
-        for i in range(0, len(points)-1, 2):
-            pygame.draw.line(self.screen, (50,50,50), points[i], points[i+1], 2)
+            puntos.append((int(x_sim), int(y_sim)))
+        for i in range(0, len(puntos) - 1, 2):
+            pygame.draw.line(self.pantalla, (50, 50, 50), puntos[i], puntos[i + 1], 2)
 
-    def draw_button(self, text, rect):
-        mouse = pygame.mouse.get_pos()
-        color = Colors.BUTTON_HOVER if rect.collidepoint(mouse) else Colors.BUTTON
-        pygame.draw.rect(self.screen, color, rect, border_radius=8)
-        label = self.font_ui.render(text, True, (255,255,255))
-        self.screen.blit(label, label.get_rect(center=rect.center))
+    def dibujar_boton(self, texto, rectangulo):
+        raton = pygame.mouse.get_pos()
+        color = colores.boton_hover if rectangulo.collidepoint(raton) else colores.boton
+        pygame.draw.rect(self.pantalla, color, rectangulo, border_radius=8)
+        etiqueta = self.fuente_ui.render(texto, True, (255, 255, 255))
+        self.pantalla.blit(etiqueta, etiqueta.get_rect(center=rectangulo.center))
 
-    def draw(self):
-        draw_gradient(self.screen, Colors.SKY_TOP, Colors.SKY_BOTTOM)
-        pygame.draw.rect(self.screen, Colors.GROUND, (0, Config.HEIGHT-60, Config.WIDTH, 60))
+    def dibujar(self):
+        dibujar_degradado(self.pantalla, colores.cielo_superior, colores.cielo_inferior)
+        pygame.draw.rect(self.pantalla, colores.suelo, (0, configuracion.alto - 60, configuracion.ancho, 60))
 
-        cx, cy = PhysicsParams.CANNON_POS
-        rad = math.radians(self.angle)
-        ex = cx + PhysicsParams.CANNON_LENGTH * math.cos(rad)
-        ey = cy - PhysicsParams.CANNON_LENGTH * math.sin(rad)
-        pygame.draw.circle(self.screen, (40,40,40), (cx, cy), 20)
-        pygame.draw.line(self.screen, Colors.CANNON, (cx, cy), (ex, ey), 10)
+        cx, cy = fisica.posicion_canon
+        radianes = math.radians(self.angulo)
+        ex = cx + fisica.longitud_canon * math.cos(radianes)
+        ey = cy - fisica.longitud_canon * math.sin(radianes)
+        pygame.draw.circle(self.pantalla, (40, 40, 40), (cx, cy), 20)
+        pygame.draw.line(self.pantalla, colores.canon, (cx, cy), (ex, ey), 10)
 
-        if self.show_round3:
-            rect = self.round3_image.get_rect(center=(Config.WIDTH//2, Config.HEIGHT//2))
-            self.screen.blit(self.round3_image, rect)
+        if self.mostrar_ronda3:
+            rect = self.imagen_ronda3.get_rect(center=(configuracion.ancho // 2, configuracion.alto // 2))
+            self.pantalla.blit(self.imagen_ronda3, rect)
         else:
-            self.draw_prediction()
-            self.target.draw(self.screen)
-            if self.projectile:
-                self.projectile.draw(self.screen)
-            ui = self.font_ui.render(f"Ronda {self.round}/3 | Intentos {self.attempts}", True, Colors.TEXT)
-            self.screen.blit(ui, (10,10))
+            self.dibujar_prediccion()
+            self.objetivo.dibujar(self.pantalla)
+            if self.bala:
+                self.bala.dibujar(self.pantalla)
+            texto_ui = self.fuente_ui.render(f"Ronda {self.ronda}/3 | Intentos {self.intentos}", True, colores.texto)
+            self.pantalla.blit(texto_ui, (10, 10))
 
-        if self.game_over and not self.show_round3:
-            msg = "¡HAS GANADO!" if self.win else "HAS PERDIDO"
-            txt = self.font_big.render(msg, True, (255,215,0))
-            self.screen.blit(txt, txt.get_rect(center=(Config.WIDTH//2, 200)))
-            self.button_rect = pygame.Rect(Config.WIDTH//2 - 80, 300, 160, 50)
-            self.draw_button("Volver a jugar", self.button_rect)
+        if self.fin_juego and not self.mostrar_ronda3:
+            mensaje = "¡HAS GANADO!" if self.gano else "HAS PERDIDO"
+            texto = self.fuente_grande.render(mensaje, True, (255, 215, 0))
+            self.pantalla.blit(texto, texto.get_rect(center=(configuracion.ancho // 2, 200)))
+            self.rectangulo_boton = pygame.Rect(configuracion.ancho // 2 - 80, 300, 160, 50)
+            self.dibujar_boton("Volver a jugar", self.rectangulo_boton)
 
         pygame.display.flip()
 
-    def run(self):
+    def ejecutar(self):
         while True:
-            dt = self.clock.tick(Config.FPS) / 1000
-            for e in pygame.event.get():
-                if e.type == pygame.QUIT:
+            delta_tiempo = self.reloj.tick(configuracion.fps) / 1000
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                if e.type == pygame.KEYDOWN and not self.game_over and not self.show_round3:
-                    if e.key == pygame.K_SPACE and not self.projectile:
-                        self.fire()
-                if e.type == pygame.MOUSEBUTTONDOWN and self.game_over:
-                    if self.button_rect.collidepoint(e.pos):
-                        self.reset_game()
+                if evento.type == pygame.KEYDOWN and not self.fin_juego and not self.mostrar_ronda3:
+                    if evento.key == pygame.K_SPACE and not self.bala:
+                        self.disparar()
+                if evento.type == pygame.MOUSEBUTTONDOWN and self.fin_juego:
+                    if self.rectangulo_boton.collidepoint(evento.pos):
+                        self.reiniciar_juego()
 
-            keys = pygame.key.get_pressed()
-            if not self.game_over and not self.show_round3:
-                if keys[pygame.K_UP]:
-                    self.angle = clamp(self.angle + 60*dt, 10, 85)
-                if keys[pygame.K_DOWN]:
-                    self.angle = clamp(self.angle - 60*dt, 10, 85)
-                if keys[pygame.K_RIGHT]:
-                    self.power = clamp(self.power + 300*dt, 100, 1500)
-                if keys[pygame.K_LEFT]:
-                    self.power = clamp(self.power - 300*dt, 100, 1500)
+            teclas = pygame.key.get_pressed()
+            if not self.fin_juego and not self.mostrar_ronda3:
+                if teclas[pygame.K_UP]:
+                    self.angulo = limitar(self.angulo + 60 * delta_tiempo, 10, 85)
+                if teclas[pygame.K_DOWN]:
+                    self.angulo = limitar(self.angulo - 60 * delta_tiempo, 10, 85)
+                if teclas[pygame.K_RIGHT]:
+                    self.potencia = limitar(self.potencia + 300 * delta_tiempo, 100, 1500)
+                if teclas[pygame.K_LEFT]:
+                    self.potencia = limitar(self.potencia - 300 * delta_tiempo, 100, 1500)
 
-            self.update(dt)
-            self.draw()
+            self.actualizar(delta_tiempo)
+            self.dibujar()
 
 if __name__ == "__main__":
-    GameManager().run()
+    gestor_juego().ejecutar()
