@@ -4,8 +4,6 @@ import sys
 import pygame
 from typing import List, Tuple, Optional
 
-# CONFIGURACIÓN GENERAL
-
 class configuracion:
     ancho = 900
     alto = 600
@@ -18,10 +16,9 @@ class colores:
     cielo_superior = (100, 149, 237)
     cielo_inferior = (224, 255, 255)
     suelo = (34, 139, 34)
-
     # elementos del juego
     texto = (255, 255, 255)
-    canon = (60, 60, 60)
+    canon = (60, 60, 60)         # canon=cañón
     proyectil = (220, 20, 60)
     estela_proyectil = (200, 200, 200)
     diana = (255, 69, 0)
@@ -33,10 +30,8 @@ class fisica:
     # tamaños de los objetos
     radio_proyectil = 6
     radio_diana = 20
-    longitud_canon = 50   # canon=cañón
+    longitud_canon = 50
     posicion_canon = (60, configuracion.alto - 70)
-
-# FUNCIONES AUXILIARES
 
 def limitar(valor, minimo, maximo):     # limitar un valor entre un mínimo y un máximo
     return max(minimo, min(maximo, valor))
@@ -47,8 +42,6 @@ def dibujar_degradado(superficie, superior, inferior):   # dibujar un degradado 
         g = superior[1] + (inferior[1] - superior[1]) * y / superficie.get_height()
         b = superior[2] + (inferior[2] - superior[2]) * y / superficie.get_height()
         pygame.draw.line(superficie, (int(r), int(g), int(b)), (0, y), (configuracion.ancho, y))
-
-# CLASE PROYECTIL
 
 class proyectil:
     def __init__(self, x, y, velocidad_x, velocidad_y):
@@ -74,8 +67,6 @@ class proyectil:
             pygame.draw.lines(pantalla, colores.estela_proyectil, False, self.estela, 2)
             pygame.draw.circle(pantalla, colores.proyectil, (int(self.x), int(self.y)), fisica.radio_proyectil)
 
-# CLASE DIANA (OBJETIVO MÓVIL)
-
 class diana:
     def __init__(self):
         self.base_x = random.randint(400, configuracion.ancho - 80)   # posicion aleatoria de la diana
@@ -99,9 +90,7 @@ class diana:
         dy = self.y - bala.y
         return dx * dx + dy * dy <= (self.radio + fisica.radio_proyectil) ** 2
 
-# CLASE PRINCIPAL DEL JUEGO
-
-class gestor_juego:
+class funcionaminento_juego:
     def __init__(self):      # inicialización de pygame
         pygame.init()
         pygame.mixer.init()
@@ -117,18 +106,18 @@ class gestor_juego:
         self.temporizador_ronda3 = 0
         self.reiniciar_juego()
 
-    def reiniciar_juego(self):    # reiniciar las variables del juego
+    def reiniciar_juego(self):    # poner el valor inicial a las variables del juego
         self.angulo = 45
         self.potencia = 500
         self.bala: Optional[proyectil] = None
         self.ronda = 1
         self.max_rondas = 3
-        self.intentos = 5
+        self.intentos = 3
         self.objetivo = diana()
-        self.fin_juego = False     # si el juego ha terminadp
+        self.fin_juego = False
         self.gano = False
-        self.mostrar_ronda3 = False  # pantalla especial de la ronda 3
-        pygame.mixer.stop()      # detener sonidos
+        self.mostrar_ronda3 = False
+        pygame.mixer.stop()
 
     def disparar(self):
         radianes = math.radians(self.angulo) # direccion del disparo
@@ -266,7 +255,7 @@ class gestor_juego:
         pygame.display.flip()
 
     def ejecutar(self):
-        # Bucle principal
+        # bucle principal
         while True:
             delta_tiempo = self.reloj.tick(configuracion.fps) / 1000
 
@@ -302,7 +291,6 @@ class gestor_juego:
             self.actualizar(delta_tiempo)
             self.dibujar()
 
-# EJECUCIÓN DEL PROGRAMA
-
+# ejecutar el juego
 if __name__ == "__main__":
-    gestor_juego().ejecutar()
+    funcionaminento_juego().ejecutar()
