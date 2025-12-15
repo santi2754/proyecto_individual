@@ -1,20 +1,7 @@
-"""Este código es un simulador de un lanzamiento paravolico.
-El usuario, utilizando las flechas del teclado, puede ajustar el angulo de lanzamiento, la flecha hacia arriba aumenta el angulo y la flecha hacia abajo lo disminuye;
-luego, al presionar la barra espaciadora, se lanza el proyectil y se observa su trayectoria sin contar los factores del entorno, para aumentar la dificultad.
-La fuerza con la que se lanza el proyectil se ajusta utilizando la w (para aumentar la fuerza) y la s (para disminuir la fuerza).
-El objetivo es aterrizar el proyectil lo más cerca posible de un objetivo fijo.
-La gravedad, viento, rozamiento con el aire variaran en cada ronda para aumentar la dificultad.
-Son 3 rondas en total.
-En cada ronda, el usuario tiene 5 intentos para acertar el objetivo.
-La diana cambia de posición cada vez que se cambia de ronda.
-El juego termina cuando se completan las 3 rondas o el usuario falla los 5 intentos en cualquier ronda.
-Al pasar de ronda, suena una melodia de victoria, si el usuario pierde, suena una melodia de derrota.
-"""
 import math
 import random
 import sys
 import pygame
-from typing import List, Tuple, Optional
 
 # --- CONFIGURACIÓN ---
 class configuracion:
@@ -25,14 +12,17 @@ class configuracion:
     titulo = "Tiro parabólico"
 
 class colores:
+    # fondo
     cielo_superior = (100, 149, 237)
     cielo_inferior = (224, 255, 255)
     suelo = (34, 139, 34)
+    # elementos del juego
     texto = (255, 255, 255)
     canon = (60, 60, 60)
     proyectil = (220, 20, 60)
     estela_proyectil = (200, 200, 200)
     diana = (255, 69, 0)
+    # botones
     boton = (70, 130, 180)
     boton_hover = (100, 160, 210)
 
@@ -42,7 +32,7 @@ class fisica:
     longitud_canon = 50
     posicion_canon = (60, configuracion.alto - 70)
 
-# --- UTILIDADES ---
+# --- FUNCIONES AUXILIARES ---
 def limitar(valor, minimo, maximo):
     return max(minimo, min(maximo, valor))
 
@@ -61,7 +51,7 @@ class proyectil:
         self.velocidad_x = velocidad_x
         self.velocidad_y = velocidad_y
         self.activo = True
-        self.estela: List[Tuple[int, int]] = []
+        self.estela = []
 
     def actualizar(self, delta_tiempo):
         self.velocidad_y += configuracion.gravedad * delta_tiempo
@@ -78,7 +68,7 @@ class proyectil:
             pygame.draw.lines(pantalla, colores.estela_proyectil, False, self.estela, 2)
         pygame.draw.circle(pantalla, colores.proyectil, (int(self.x), int(self.y)), fisica.radio_proyectil)
 
-# --- DIANA MÓVIL ---
+# --- DIANA ---
 class diana:
     def __init__(self):
         self.base_x = random.randint(400, configuracion.ancho - 80)
@@ -103,34 +93,29 @@ class diana:
         return dx * dx + dy * dy <= (self.radio + fisica.radio_proyectil) ** 2
 
 # --- JUEGO ---
-class gestor_juego:
+class funcionaminento_juego:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-
         self.pantalla = pygame.display.set_mode((configuracion.ancho, configuracion.alto))
         pygame.display.set_caption(configuracion.titulo)
         self.reloj = pygame.time.Clock()
-
         self.fuente_ui = pygame.font.SysFont("Verdana", 14)
         self.fuente_grande = pygame.font.SysFont("Verdana", 48, bold=True)
-
         self.sonido_ganar = pygame.mixer.Sound("victory.wav")
         self.sonido_perder = pygame.mixer.Sound("defeat.wav")
-
         self.imagen_ronda3 = pygame.image.load("round3.png").convert_alpha()
         self.mostrar_ronda3 = False
         self.temporizador_ronda3 = 0
-
         self.reiniciar_juego()
 
     def reiniciar_juego(self):
         self.angulo = 45
         self.potencia = 500
-        self.bala: Optional[proyectil] = None
+        self.bala = None
         self.ronda = 1
         self.max_rondas = 3
-        self.intentos = 5
+        self.intentos = 3
         self.objetivo = diana()
         self.fin_juego = False
         self.gano = False
@@ -149,15 +134,12 @@ class gestor_juego:
     def actualizar(self, delta_tiempo):
         if self.fin_juego:
             return
-
         if self.mostrar_ronda3:
             self.temporizador_ronda3 -= delta_tiempo
             if self.temporizador_ronda3 <= 0:
                 self.mostrar_ronda3 = False
             return
-
         self.objetivo.actualizar(delta_tiempo)
-
         if self.bala:
             self.bala.actualizar(delta_tiempo)
             if self.objetivo.impacta(self.bala):
@@ -209,14 +191,12 @@ class gestor_juego:
     def dibujar(self):
         dibujar_degradado(self.pantalla, colores.cielo_superior, colores.cielo_inferior)
         pygame.draw.rect(self.pantalla, colores.suelo, (0, configuracion.alto - 60, configuracion.ancho, 60))
-
         cx, cy = fisica.posicion_canon
         radianes = math.radians(self.angulo)
         ex = cx + fisica.longitud_canon * math.cos(radianes)
         ey = cy - fisica.longitud_canon * math.sin(radianes)
         pygame.draw.circle(self.pantalla, (40, 40, 40), (cx, cy), 20)
         pygame.draw.line(self.pantalla, colores.canon, (cx, cy), (ex, ey), 10)
-
         if self.mostrar_ronda3:
             rect = self.imagen_ronda3.get_rect(center=(configuracion.ancho // 2, configuracion.alto // 2))
             self.pantalla.blit(self.imagen_ronda3, rect)
@@ -227,14 +207,12 @@ class gestor_juego:
                 self.bala.dibujar(self.pantalla)
             texto_ui = self.fuente_ui.render(f"Ronda {self.ronda}/3 | Intentos {self.intentos}", True, colores.texto)
             self.pantalla.blit(texto_ui, (10, 10))
-
         if self.fin_juego and not self.mostrar_ronda3:
             mensaje = "¡HAS GANADO!" if self.gano else "HAS PERDIDO"
             texto = self.fuente_grande.render(mensaje, True, (255, 215, 0))
             self.pantalla.blit(texto, texto.get_rect(center=(configuracion.ancho // 2, 200)))
             self.rectangulo_boton = pygame.Rect(configuracion.ancho // 2 - 80, 300, 160, 50)
             self.dibujar_boton("Volver a jugar", self.rectangulo_boton)
-
         pygame.display.flip()
 
     def ejecutar(self):
@@ -250,7 +228,6 @@ class gestor_juego:
                 if evento.type == pygame.MOUSEBUTTONDOWN and self.fin_juego:
                     if self.rectangulo_boton.collidepoint(evento.pos):
                         self.reiniciar_juego()
-
             teclas = pygame.key.get_pressed()
             if not self.fin_juego and not self.mostrar_ronda3:
                 if teclas[pygame.K_UP]:
@@ -261,9 +238,9 @@ class gestor_juego:
                     self.potencia = limitar(self.potencia + 300 * delta_tiempo, 100, 1500)
                 if teclas[pygame.K_LEFT]:
                     self.potencia = limitar(self.potencia - 300 * delta_tiempo, 100, 1500)
-
             self.actualizar(delta_tiempo)
             self.dibujar()
 
+# --- EJECUCIÓN ---
 if __name__ == "__main__":
-    gestor_juego().ejecutar()
+    funcionaminento_juego().ejecutar()
