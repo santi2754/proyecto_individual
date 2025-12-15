@@ -53,7 +53,7 @@ class proyectil:
         self.estela: List[Tuple[int, int]] = []   # lista de posiciones para la estela
 
     def actualizar(self, delta_tiempo):
-        self.velocidad_y += configuracion.gravedad * delta_tiempo  # gravedad
+        self.velocidad_y += configuracion.gravedad * delta_tiempo  # actualización de la velocidad
         self.x += self.velocidad_x * delta_tiempo    # actualización de la posición
         self.y += self.velocidad_y * delta_tiempo
         self.estela.append((int(self.x), int(self.y)))   # guarda la posición para crear la estela
