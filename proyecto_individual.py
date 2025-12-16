@@ -1,3 +1,17 @@
+""" Este código implementa un juego de tiro parabólico utilizando Pygame. El jugador controla un cañón para disparar proyectiles
+hacia una diana móvil, con el objetivo de acertar en la diana en varias rondas. El juego incluye física básica, detección de colisiones,
+una interfaz de usuario simple y efectos visuales como una estela para el proyectil y un degradado de fondo. 
+El juego termina cuando el jugador gana al acertar en todas las rondas o pierde al quedarse sin intentos. 
+El código está estructurado en varias clases para manejar la configuración, colores, física, proyectiles, dianas y el funcionamiento general del juego.
+
+Ejemplo de uso:
+    Para ejecutar el juego, asegúrate de tener Pygame instalado y los archivos de sonido e imagen necesarios en el mismo directorio que este script.
+    Luego, simplemente ejecuta este script en tu entorno de Python.
+    1. El usuario puede controlar el ángulo y la potencia del disparo utilizando las teclas de flecha.
+    2. Presiona la barra espaciadora para disparar el proyectil.
+    3. El objetivo es acertar en la diana móvil en tres rondas, con un número limitado de intentos.
+    4. El juego muestra una pantalla de victoria o derrota al final, con la opción de reiniciar el juego.
+"""
 import math
 import random
 import sys
@@ -59,7 +73,7 @@ class proyectil:
         self.estela.append((int(self.x), int(self.y)))   # guarda la posición para crear la estela
         if len(self.estela) > 150:
             self.estela.pop(0)
-        if (self.y > configuracion.alto or self.x < 0 or self.x > configuracion.ancho):  # fuera de pantalla
+        elif (self.y > configuracion.alto or self.x < 0 or self.x > configuracion.ancho):  # fuera de pantalla
             self.activo = False
 
     def dibujar(self, pantalla):      # estela antes de dibujar el proyectil
@@ -154,7 +168,7 @@ class funcionaminento_juego:
                     self.mostrar_ronda3 = True
                     self.temporizador_ronda3 = 3
 
-                if self.ronda > self.max_rondas:     # victoria
+                elif self.ronda > self.max_rondas:     # victoria
                     self.gano = True
                     self.fin_juego = True
                     self.sonido_ganar.play(-1)
