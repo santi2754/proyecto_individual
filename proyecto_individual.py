@@ -295,11 +295,11 @@ class funcionaminento_juego:
             if not self.fin_juego and not self.mostrar_ronda3:
                 if teclas[pygame.K_UP]:
                     self.angulo = limitar(self.angulo + 60 * delta_tiempo, 10, 85)
-                if teclas[pygame.K_DOWN]:
+                elif teclas[pygame.K_DOWN]:
                     self.angulo = limitar(self.angulo - 60 * delta_tiempo, 10, 85)
-                if teclas[pygame.K_RIGHT]:
+                elif teclas[pygame.K_RIGHT]:
                     self.potencia = limitar(self.potencia + 300 * delta_tiempo, 100, 1500)
-                if teclas[pygame.K_LEFT]:
+                elif teclas[pygame.K_LEFT]:
                     self.potencia = limitar(self.potencia - 300 * delta_tiempo, 100, 1500)
 
             self.actualizar(delta_tiempo)
